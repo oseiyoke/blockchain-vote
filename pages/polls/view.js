@@ -64,7 +64,6 @@ class PollShow extends Component {
     super(props);
 
     this.state = {
-      voteButton: [],
       candidates: [],
       errorMessage: "",
       isHidden: true,
@@ -76,8 +75,7 @@ class PollShow extends Component {
     this.setState({
       isHidden: true,
       loading: true,
-      errorMessage: "",
-      voteButton: []
+      errorMessage: ""
     });
 
     let id = event.target.value;
@@ -114,6 +112,16 @@ class PollShow extends Component {
           <Cell>{web3.utils.toAscii(candidate[1])}</Cell>
           <Cell>{web3.utils.toAscii(candidate[2])}</Cell>
           <Cell>{candidate_votes[index]}</Cell>
+          <Cell>
+            <Button
+              onClick={this.handleVote}
+              style={{ backgroundColor: "#66cc66" }}
+              value={candidate[0]}
+              loading={this.state.loading}
+            >
+              Vote for {web3.utils.toAscii(candidate[1])}
+            </Button>
+          </Cell>
         </Row>
       );
     });
@@ -121,23 +129,7 @@ class PollShow extends Component {
     return item;
   };
 
-  async componentDidMount() {
-    let _buttons = [];
-
-    _buttons = this.props.candidates.map((candidate, index) => {
-      return (
-        <Button
-          onClick={this.handleVote}
-          style={{ backgroundColor: "#66cc66" }}
-          value={candidate[0]}
-        >
-          Vote for {web3.utils.toAscii(candidate[1])}
-        </Button>
-      );
-    });
-
-    this.setState({ voteButton: _buttons });
-  }
+  async componentDidMount() {}
 
   render() {
     const { Header, Row, HeaderCell, Body } = Table;
@@ -188,16 +180,13 @@ class PollShow extends Component {
                         <HeaderCell>Candidate</HeaderCell>
                         <HeaderCell>Party</HeaderCell>
                         <HeaderCell>Votes</HeaderCell>
+                        <HeaderCell>Vote</HeaderCell>
                       </Row>
                     </Header>
                     <Body>{this.renderRows()}</Body>
                   </Table>
                 </Grid.Column>
               </Grid.Row>
-
-              <br />
-
-              <Grid.Row>{this.state.voteButton}</Grid.Row>
             </Grid.Column>
           </Grid.Row>
         </Grid>
