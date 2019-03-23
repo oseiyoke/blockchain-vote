@@ -1,5 +1,8 @@
 import React, { Component } from "react";
 import Poll from "../../ethereum/poll";
+import Contract from "../../ethereum/build/Poll.json";
+import HDWalletProvider from "truffle-hdwallet-provider";
+import Web3 from "web3";
 import web3 from "../../ethereum/web3";
 import { Link } from "../../routes";
 import Layout from "../../components/Layout";
@@ -64,16 +67,39 @@ class PollShow extends Component {
     super(props);
 
     this.state = {
+      accounts: [],
       candidates: [],
       errorMessage: "",
+      seed: "",
       voteButton: {
         display: "none",
         backgroundColor: "#66cc66",
         color: "white"
       },
+      buttonAction: this.handleVote,
       isHidden: true,
       loading: false
     };
+  }
+
+  async componentDidMount() {
+    if (typeof window.web3 === "undefined") {
+      //We are in the browser and metamask is not running
+      console.log("No Metamask");
+      this.setState({
+        isHidden: false
+      });
+    } else {
+      const accounts = await web3.eth.getAccounts();
+      console.log(accounts[0]);
+
+      this.showButton();
+
+      this.setState({
+        accounts,
+        isHidden: true
+      });
+    }
   }
 
   handleVote = async event => {
@@ -87,7 +113,7 @@ class PollShow extends Component {
     console.log(id);
 
     try {
-      const accounts = await web3.eth.getAccounts();
+      let accounts = this.state.accounts;
 
       const poll = Poll(this.props.address);
 
@@ -105,33 +131,66 @@ class PollShow extends Component {
     this.setState({ loading: false });
   };
 
-  renderRows = () => {
-    const { Row, Cell } = Table;
-    const { candidates, candidate_votes } = this.props;
-    let item = [];
+  handleKey = async () => {
+    try {
+      const res = web3.eth.accounts.create(this.state.seed);
+      console.log(res);
 
-    candidates.forEach((candidate, index) => {
-      item.push(
-        <Row>
-          <Cell>{candidate[0]}</Cell>
-          <Cell>{web3.utils.toAscii(candidate[1])}</Cell>
-          <Cell>{web3.utils.toAscii(candidate[2])}</Cell>
-          <Cell>{candidate_votes[index]}</Cell>
-          <Cell>
-            <Button
-              onClick={this.handleVote}
-              style={{ backgroundColor: "#66cc66" }}
-              value={candidate[0]}
-              loading={this.state.loading}
-            >
-              Vote for {web3.utils.toAscii(candidate[1])}
-            </Button>
-          </Cell>
-        </Row>
+      const provider = new HDWalletProvider(
+        this.state.seed,
+        "https://rinkeby.infura.io/v3/33f420fcb0d049feb46730b08931fcfc"
       );
+      const _web3 = new Web3(provider);
+
+      const accounts = await _web3.eth.getAccounts();
+
+      console.log(accounts);
+
+      this.setState({ accounts, buttonAction: this.newHandleVote });
+      this.showButton();
+    } catch (err) {
+      console.log(err.message);
+    }
+  };
+
+  newHandleVote = async event => {
+    this.setState({
+      isHidden: true,
+      loading: true,
+      errorMessage: ""
     });
 
-    return item;
+    let id = event.target.value;
+    console.log(id);
+
+    try {
+      console.log(accounts, this.state.seed);
+
+      let accounts = this.state.accounts;
+
+      const provider = new HDWalletProvider(
+        this.state.seed,
+        "https://rinkeby.infura.io/v3/33f420fcb0d049feb46730b08931fcfc"
+      );
+      const _web3 = new Web3(provider);
+
+      const poll = new _web3.eth.Contract(
+        JSON.parse(Contract.interface),
+        this.props.address
+      );
+
+      await poll.methods.vote(accounts[0], id).send({
+        from: accounts[0],
+        gas: "1000000"
+      });
+
+      Router.push(`/polls/${this.props.address}/`);
+    } catch (err) {
+      this.setState({ errorMessage: err.message });
+      console.log(err);
+    }
+
+    this.setState({ loading: false });
   };
 
   renderCards = () => {
@@ -150,7 +209,7 @@ class PollShow extends Component {
             <Meta>{web3.utils.toAscii(candidate[2])}</Meta>
             <Description>
               <Button
-                onClick={this.handleVote}
+                onClick={this.state.buttonAction}
                 style={this.state.voteButton}
                 value={candidate[0]}
                 loading={this.state.loading}
@@ -166,20 +225,11 @@ class PollShow extends Component {
     return item;
   };
 
-  async componentDidMount() {
-    if (typeof window.web3 === "undefined") {
-      //We are in the browser and metamask is running
-      console.log("No Metamask");
-      this.setState({
-        isHidden: false
-      });
-    } else {
-      this.setState({
-        voteButton: { backgroundColor: "#66cc66", color: "white" },
-        isHidden: true
-      });
-    }
-  }
+  showButton = () => {
+    this.setState({
+      voteButton: { backgroundColor: "#66cc66", color: "white" }
+    });
+  };
 
   render() {
     const { Header, Row, HeaderCell, Body } = Table;
@@ -214,20 +264,25 @@ class PollShow extends Component {
               <Grid.Row>
                 <Grid.Column>
                   <div style={{ marginBottom: "10px" }}>
-                    <Message
-                      error={true}
-                      header="Oops!"
-                      hidden={this.state.isHidden}
-                    >
+                    <Message error={true} hidden={this.state.isHidden}>
+                      <Message.Header>Oops!</Message.Header>
                       <Message.Content>
                         Your browser doesn't have <b>MetaMask</b>, If you have
-                        an <b>ethereum account</b> input the <b>private key</b>
+                        an <b>ethereum account</b> input the <b>seed phrase</b>
                         <br />
                         <Input
-                          autocomplete={"off"}
-                          placeholder={"Private key"}
-                          style={{ width: "100%" }}
+                          autoComplete={"off"}
+                          placeholder={"12 word Seed Phrase"}
+                          style={{ width: "90%", margin: "5px", marginLeft: 0 }}
+                          value={this.state.seed}
+                          onChange={event => {
+                            this.setState({ seed: event.target.value });
+                          }}
                         />
+                        <Button onClick={this.handleKey} primary>
+                          Submit
+                        </Button>
+                        <br />
                         <b>else</b> create one
                         <Link route={`/polls/${this.props.address}/`}>
                           <a> Here</a>
