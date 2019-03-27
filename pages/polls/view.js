@@ -68,9 +68,10 @@ class PollShow extends Component {
 
     this.state = {
       accounts: [],
+      address: "",
       candidates: [],
       errorMessage: "",
-      seed: "",
+      privateKey: "",
       voteButton: {
         display: "none",
         backgroundColor: "#66cc66",
@@ -93,7 +94,7 @@ class PollShow extends Component {
       const accounts = await web3.eth.getAccounts();
       console.log(accounts[0]);
 
-      this.showButton();
+      // this.showButton();
 
       this.setState({
         accounts,
@@ -113,12 +114,10 @@ class PollShow extends Component {
     console.log(id);
 
     try {
-      let accounts = this.state.accounts;
-
       const poll = Poll(this.props.address);
 
-      await poll.methods.vote(accounts[0], id).send({
-        from: accounts[0]
+      await poll.methods.vote(this.state.address, id).send({
+        from: this.state.accounts[0]
       });
 
       // Router.replace(`/polls/${this.props.address}/`);
@@ -133,26 +132,22 @@ class PollShow extends Component {
 
   handleKey = async () => {
     try {
-      const res = web3.eth.accounts.create(this.state.seed);
+      const res = web3.eth.accounts.privateKeyToAccount(this.state.privateKey);
       console.log(res);
 
-      const provider = new HDWalletProvider(
-        this.state.seed,
-        "https://rinkeby.infura.io/v3/33f420fcb0d049feb46730b08931fcfc"
-      );
-      const _web3 = new Web3(provider);
+      this.setState({
+        address: res.address
+      });
 
-      const accounts = await _web3.eth.getAccounts();
+      await web3.eth.accounts.wallet.add(res);
 
-      console.log(accounts);
-
-      this.setState({ accounts, buttonAction: this.newHandleVote });
       this.showButton();
     } catch (err) {
       console.log(err.message);
     }
   };
 
+  /*
   newHandleVote = async event => {
     this.setState({
       isHidden: true,
@@ -192,6 +187,7 @@ class PollShow extends Component {
 
     this.setState({ loading: false });
   };
+  */
 
   renderCards = () => {
     const { Content, Header, Meta, Description } = Card;
@@ -235,7 +231,7 @@ class PollShow extends Component {
     const { Header, Row, HeaderCell, Body } = Table;
 
     return (
-      <Layout>
+      <Layout show={true} address={this.props.address}>
         <Grid style={{ marginTop: "10px" }}>
           <Grid.Row>
             <Grid.Column textAlign="center">
@@ -264,28 +260,26 @@ class PollShow extends Component {
               <Grid.Row>
                 <Grid.Column>
                   <div style={{ marginBottom: "10px" }}>
-                    <Message error={true} hidden={this.state.isHidden}>
-                      <Message.Header>Oops!</Message.Header>
+                    <Message>
+                      <Message.Header>Private Key</Message.Header>
                       <Message.Content>
-                        Your browser doesn't have <b>MetaMask</b>, If you have
-                        an <b>ethereum account</b> input the <b>seed phrase</b>
+                        Enter your Private Key
                         <br />
                         <Input
                           autoComplete={"off"}
-                          placeholder={"12 word Seed Phrase"}
+                          placeholder={"Private Key"}
                           style={{ width: "90%", margin: "5px", marginLeft: 0 }}
-                          value={this.state.seed}
+                          value={this.state.privateKey}
                           onChange={event => {
-                            this.setState({ seed: event.target.value });
+                            this.setState({ privateKey: event.target.value });
                           }}
                         />
                         <Button onClick={this.handleKey} primary>
                           Submit
                         </Button>
                         <br />
-                        <b>else</b> create one
-                        <Link route={`/polls/${this.props.address}/`}>
-                          <a> Here</a>
+                        <Link route={`/polls/${this.props.address}/voter/new`}>
+                          <a> Create one here</a>
                         </Link>
                       </Message.Content>
                     </Message>

@@ -1,12 +1,18 @@
 import react, { Component } from "react";
-import Layout from "../../components/Layout";
-import web3 from "../../ethereum/web3";
-import factory from "../../ethereum/factory";
+import Layout from "../../../components/Layout";
+import web3 from "../../../ethereum/web3";
+import factory from "../../../ethereum/factory";
+import Poll from "../../../ethereum/poll";
 import { Input, Form, Button, Message, TextArea } from "semantic-ui-react";
 import { DateTimeInput, DateInput } from "semantic-ui-calendar-react";
-import { Router } from "../../routes";
+import { Router, Link } from "../../../routes";
 
 export default class VoterNew extends Component {
+  static async getInitialProps(props) {
+    return {
+      address: props.query.address
+    };
+  }
   state = {
     name: "",
     dob: "",
@@ -14,7 +20,9 @@ export default class VoterNew extends Component {
     selectedFile: null,
     loaded: 0,
     errorMessage: "",
-    loading: false
+    loading: false,
+    privateKey: "",
+    isHidden: true
   };
 
   handleChange = (event, { name, value }) => {
@@ -40,7 +48,33 @@ export default class VoterNew extends Component {
     this.setState({ loading: true, errorMessage: "" });
 
     try {
-      Router.pushRoute("/");
+      const user_account = await web3.eth.accounts.create();
+      console.log(user_account);
+
+      const [account] = await web3.eth.getAccounts();
+      const poll = Poll(this.props.address);
+
+      const request = await poll.methods
+        .registerVoter(
+          web3.utils.fromAscii(name),
+          web3.utils.fromAscii(dob),
+          web3.utils.fromAscii(address),
+          user_account.address
+        )
+        .send({
+          from: account
+        });
+
+      if (request) {
+        this.setState({
+          isHidden: false,
+          privateKey: user_account.privateKey
+        });
+      } else {
+        this.setState({ errorMessage: err.message });
+      }
+
+      // Router.pushRoute("/");
     } catch (err) {
       this.setState({ errorMessage: err.message });
     }
@@ -51,7 +85,18 @@ export default class VoterNew extends Component {
   render() {
     return (
       <Layout>
+        <Link route={`/polls/${this.props.address}`}>
+          <a>Back</a>
+        </Link>
+
         <h3>Register</h3>
+
+        <Message
+          success
+          header="Keep this Private Key!"
+          content={this.state.privateKey}
+          hidden={this.state.isHidden}
+        />
 
         <Form onSubmit={this.onSubmit} error={!!this.state.errorMessage}>
           <Form.Field>

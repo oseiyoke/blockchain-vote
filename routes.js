@@ -4,6 +4,6 @@ routes
   .add("/polls/new", "/polls/new")
   .add("/polls/:address", "/polls/view")
   .add("/polls/:address/candidates/new", "/polls/candidates/new")
-  .add("/voter/new", "/voter/new");
+  .add("/polls/:address/voter/new", "/polls/voter/new");
 
 module.exports = routes;

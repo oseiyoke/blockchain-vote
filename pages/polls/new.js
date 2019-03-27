@@ -26,7 +26,7 @@ export default class PollNew extends Component {
 
     const { title, start_time, end_time } = this.state;
 
-    let _title = web3.utils.fromAscii(title);
+    let _title = web3.utils.fromAscii(title.trim(), 32);
     let _start_time = new Date(start_time).getTime();
     let _end_time = new Date(end_time).getTime();
 

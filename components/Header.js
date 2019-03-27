@@ -2,7 +2,7 @@ import React from "react";
 import { Menu } from "semantic-ui-react";
 import { Link } from "../routes";
 
-export default () => {
+export default props => {
   return (
     <Menu style={{ marginTop: "10px" }}>
       <Link route="/">
@@ -10,9 +10,11 @@ export default () => {
       </Link>
 
       <Menu.Menu position="right">
-        <Link route="/voter/new">
-          <a className="item">Register Voter</a>
-        </Link>
+        {props.show ? (
+          <Link route={`/polls/${props.address}/voter/new`}>
+            <a className="item">Register Voter</a>
+          </Link>
+        ) : null}
 
         <Link route="/">
           <a className="item">Polls</a>

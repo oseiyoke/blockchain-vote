@@ -14,7 +14,7 @@ export default props => {
         <title>Blockchain Voting</title>
       </Head>
 
-      <Header />
+      <Header show={props.show} address={props.address} />
       {props.children}
     </Container>
   );

@@ -33,7 +33,6 @@ export default class CandidateNew extends Component {
     try {
       const poll = Poll(this.props.address);
       const accounts = await web3.eth.getAccounts();
-
       await poll.methods.addCandidate(name, party).send({
         from: accounts[0]
       });
@@ -48,7 +47,7 @@ export default class CandidateNew extends Component {
 
   render() {
     return (
-      <Layout>
+      <Layout show={true} address={this.props.address}>
         <h3>Add {this.state.name}</h3>
 
         <Form onSubmit={this.onSubmit} error={!!this.state.errorMessage}>

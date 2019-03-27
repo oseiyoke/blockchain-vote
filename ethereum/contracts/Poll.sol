@@ -4,7 +4,7 @@ contract PollFactory{
     address[] public deployedPolls;    
     
     function createPoll(bytes32 _title, uint _start_time, uint _end_time) public {
-        address newPoll = new Poll(_title, _start_time, _end_time);
+        address newPoll = new Poll(_title, _start_time, _end_time, msg.sender);
         deployedPolls.push(newPoll);
     }
 
@@ -40,6 +40,13 @@ contract Poll{
         bool doesExist; 
     }
 
+    //Information of registered voters
+    struct VoterInfo{
+        bytes32 name;
+        bytes32 dob; 
+        bytes32 homeAddress;
+    }
+
     // These state variables are used keep track of the number of Candidates/Voters 
     // and used to as a way to index them     
     uint numCandidates; // declares a state variable - number Of Candidates
@@ -49,6 +56,9 @@ contract Poll{
     
     //Title of the Poll
     bytes32 public title;
+
+    //Owner of poll
+    address public owner;
     
     // Think of these as a hash table, with the key as a uint and value of 
     // the struct Candidate/Voter. These mappings will be used in the majority
@@ -56,6 +66,10 @@ contract Poll{
     // These mappings will hold all the candidates and Voters respectively
     mapping (uint => Candidate) candidates;
     mapping (uint => Voter) voters;
+
+    //A mapping to verify voter registration
+    mapping (address => bool) canVote;
+    mapping (address => VoterInfo) voterMap;
     
 
     // modifiers or as I like to call them "decorators"
@@ -63,17 +77,25 @@ contract Poll{
         require(_start_time > now && _end_time > now && _end_time > _start_time);
         _;
     }
+    
+    modifier isOwner(){
+        require(msg.sender == owner);
+        _;
+    }
 
-    function Poll(bytes32 _title, uint _start_time, uint _end_time) validTime(_start_time,_end_time) public {
+    function Poll(bytes32 _title, uint _start_time, uint _end_time, address _owner) validTime(_start_time,_end_time) public {
         title = _title;
         start_time = _start_time;
         end_time = _end_time;
+        owner = _owner;
+        
+        canVote[_owner] = true;
     }
     /* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
      *  These functions perform transactions, editing the mappings *
      * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
 
-    function addCandidate(bytes32 name, bytes32 party) public {
+    function addCandidate(bytes32 name, bytes32 party) isOwner public {
         // candidateID is the return variable
         uint candidateID = numCandidates++;
         // Create new Candidate Struct with name and saves it to storage.
@@ -83,9 +105,21 @@ contract Poll{
 
     function vote(bytes32 uid, uint candidateID) public {
         // checks if the struct exists for that candidate
+        require(canVote[msg.sender]);
         if (candidates[candidateID].doesExist == true) {
             uint voterID = numVoters++; //voterID is the return variable
             voters[voterID] = Voter(uid,candidateID);
+        }
+        canVote[msg.sender] = false;
+    }
+
+    //function to register voter
+    function registerVoter(bytes32 _name, bytes32 _dob, bytes32 _homeAddress, address _voter) isOwner public returns (bool){
+        if(!canVote[_voter]){
+            canVote[_voter] = true;
+            voterMap[_voter] = VoterInfo(_name, _dob, _homeAddress);
+
+            return true;
         }
     }
 
@@ -117,5 +151,9 @@ contract Poll{
     // returns candidate information, including its ID, name, and party
     function getCandidate(uint candidateID) public view returns (uint,bytes32, bytes32) {
         return (candidateID,candidates[candidateID].name,candidates[candidateID].party);
+    }
+
+    function validateRequest(address _sender) public view returns(bool){
+        return canVote[_sender];
     }
 }
