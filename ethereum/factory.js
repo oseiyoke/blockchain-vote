@@ -3,7 +3,7 @@ import HealthRecordFactory from "./build/PollFactory.json";
 
 const instance = new web3.eth.Contract(
   JSON.parse(HealthRecordFactory.interface),
-  "0x33781f2E724Fd1C8F5F0C6028Cbb0618Fc9212E6"
+  "0xc1d252f0602f3212e85661e537Ab46674b93F0dE"
 );
 
 export default instance;

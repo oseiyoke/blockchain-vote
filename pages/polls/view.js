@@ -116,14 +116,19 @@ class PollShow extends Component {
     try {
       const poll = Poll(this.props.address);
 
-      await poll.methods.vote(this.state.address, id).send({
+      await poll.methods.vote(this.state.address, this.state.address, id).send({
         from: this.state.accounts[0]
       });
 
       // Router.replace(`/polls/${this.props.address}/`);
       Router.push(`/polls/${this.props.address}/`);
     } catch (err) {
-      this.setState({ errorMessage: err.message });
+      if (err.message.includes("Transaction has been reverted by the EVM")) {
+        this.setState({
+          errorMessage: "User has already voted",
+          isHidden: false
+        });
+      } else this.setState({ errorMessage: err.message, isHidden: false });
       console.log(err);
     }
 
@@ -143,6 +148,10 @@ class PollShow extends Component {
 
       this.showButton();
     } catch (err) {
+      this.setState({
+        errorMessage: err.message,
+        isHidden: false
+      });
       console.log(err.message);
     }
   };
@@ -260,6 +269,12 @@ class PollShow extends Component {
               <Grid.Row>
                 <Grid.Column>
                   <div style={{ marginBottom: "10px" }}>
+                    <Message
+                      header="Oops!"
+                      content={this.state.errorMessage}
+                      error
+                      hidden={this.state.isHidden}
+                    />
                     <Message>
                       <Message.Header>Private Key</Message.Header>
                       <Message.Content>
