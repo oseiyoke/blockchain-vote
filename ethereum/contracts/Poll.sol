@@ -103,14 +103,14 @@ contract Poll{
         AddedCandidate(candidateID);
     }
 
-    function vote(bytes32 uid, uint candidateID) public {
+    function vote(bytes32 uid, address voter, uint candidateID) public {
         // checks if the struct exists for that candidate
-        require(canVote[msg.sender]);
+        require(canVote[voter]);
         if (candidates[candidateID].doesExist == true) {
             uint voterID = numVoters++; //voterID is the return variable
             voters[voterID] = Voter(uid,candidateID);
         }
-        canVote[msg.sender] = false;
+        canVote[voter] = false;
     }
 
     //function to register voter
