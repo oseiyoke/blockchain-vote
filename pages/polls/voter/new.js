@@ -25,6 +25,17 @@ export default class VoterNew extends Component {
     isHidden: true
   };
 
+  makeid(length) {
+    var text = "";
+    var possible =
+      "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
+
+    for (var i = 0; i < length; i++)
+      text += possible.charAt(Math.floor(Math.random() * possible.length));
+
+    return text;
+  }
+
   handleChange = (event, { name, value }) => {
     if (this.state.hasOwnProperty(name)) {
       this.setState({ [name]: value });
@@ -47,7 +58,99 @@ export default class VoterNew extends Component {
 
     this.setState({ loading: true, errorMessage: "" });
 
+    let reader = new FileReader();
+    reader.onloadend = function() {
+      console.log(reader.result);
+    };
+    let uploaded_image = reader.readAsDataURL(selectedFile);
+    console.log(uploaded_image);
+
     try {
+      let fullname = name.split(" ");
+      console.log(fullname);
+      if (fullname.length < 3) throw "Enter Firstname, Lastname & middlename";
+
+      let reference = this.makeid(15);
+      let client_id =
+        "wUZ7gJf7Z0Y5PLh42zk0dV5lbb4YSMl955mwIyUPEVKCIlmTzR1554086576";
+      let client_key =
+        "$2y$10$43kLOeiBQ141wOoWxc.vheUZKaxCVBcO.gZPzDN9GeAZk3jQxkl4u";
+
+      console.log("reference: ", reference);
+
+      const shufti = await fetch("https://shuftipro.com/api/", {
+        method: "POST",
+        headers: {
+          Accept: "application/json",
+          Authorization: "Basic " + btoa(client_id + ":" + client_key),
+          "Content-Type": "application/json",
+          Host: "shuftipro.com"
+        },
+        body: JSON.stringify({
+          reference,
+          callback_url: "https://shuftipro.com/backoffice/demo-redirect",
+          document: {
+            proof: uploaded_image,
+            additional_proof: uploaded_image,
+            supported_types: [
+              "passport",
+              "id_card",
+              "driving_license",
+              "credit_or_debit_card"
+            ],
+            name: {
+              first_name: fullname[0],
+              last_name: fullname[1],
+              middle_name: fullname[2]
+            },
+            dob
+          },
+          address: {
+            proof: uploaded_image,
+            full_address: address
+          },
+
+          background_checks: {
+            name: {
+              first_name: fullname[0],
+              last_name: fullname[1],
+              middle_name: fullname[2]
+            },
+            dob
+          },
+          requests: [
+            {
+              country: "NG",
+              reference,
+              auth: {
+                type: "basic",
+                basic: [
+                  {
+                    key: "password",
+                    value: client_key
+                  },
+                  {
+                    key: "username",
+                    value: client_id
+                  }
+                ]
+              },
+              currentHelper: "basicAuth",
+              helperAttributes: {
+                id: "basic",
+                username: client_id,
+                password: client_key
+              }
+            }
+          ]
+        })
+      });
+
+      const content = await shufti.json();
+
+      console.log(content);
+
+      /*
       const user_account = await web3.eth.accounts.create();
       console.log(user_account);
 
@@ -75,8 +178,10 @@ export default class VoterNew extends Component {
       }
 
       // Router.pushRoute("/");
+      */
     } catch (err) {
       this.setState({ errorMessage: err.message });
+      console.log(err.message);
     }
 
     this.setState({ loading: false });
@@ -103,7 +208,7 @@ export default class VoterNew extends Component {
             <label>Full Name</label>
             <Input
               value={this.state.name}
-              placeholder="Full Name"
+              placeholder="FirstName  LastName  MiddleName"
               onChange={event => {
                 this.setState({ name: event.target.value });
               }}

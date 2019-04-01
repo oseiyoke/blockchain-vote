@@ -77,7 +77,7 @@ class PollShow extends Component {
         backgroundColor: "#66cc66",
         color: "white"
       },
-      buttonAction: this.handleVote,
+      buttonAction: null,
       isHidden: true,
       loading: false
     };
@@ -159,12 +159,12 @@ class PollShow extends Component {
     console.log(id);
 
     try {
-      console.log(accounts, this.state.seed);
+      // console.log(accounts, this.state.seed);
 
-      let accounts = this.state.accounts;
+      let accounts = this.state.address;
 
       const provider = new HDWalletProvider(
-        this.state.seed,
+        "tooth rescue frown bicycle road during cup story spoil engage obey area",
         "https://rinkeby.infura.io/v3/33f420fcb0d049feb46730b08931fcfc"
       );
       const _web3 = new Web3(provider);
@@ -174,7 +174,7 @@ class PollShow extends Component {
         this.props.address
       );
 
-      await poll.methods.vote(accounts[0], id).send({
+      await poll.methods.vote(address, id).send({
         from: accounts[0],
         gas: "1000000"
       });
@@ -223,7 +223,8 @@ class PollShow extends Component {
 
   showButton = () => {
     this.setState({
-      voteButton: { backgroundColor: "#66cc66", color: "white" }
+      voteButton: { backgroundColor: "#66cc66", color: "white" },
+      buttonAction: this.handleVote
     });
   };
 
