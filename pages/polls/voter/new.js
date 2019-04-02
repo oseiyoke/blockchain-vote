@@ -5,6 +5,7 @@ import factory from "../../../ethereum/factory";
 import Poll from "../../../ethereum/poll";
 import { Input, Form, Button, Message, TextArea } from "semantic-ui-react";
 import { DateTimeInput, DateInput } from "semantic-ui-calendar-react";
+import FileBase64 from "react-file-base64";
 import { Router, Link } from "../../../routes";
 
 export default class VoterNew extends Component {
@@ -18,6 +19,7 @@ export default class VoterNew extends Component {
     dob: "",
     address: "",
     selectedFile: null,
+    imageURL: "",
     loaded: 0,
     errorMessage: "",
     loading: false,
@@ -36,6 +38,37 @@ export default class VoterNew extends Component {
     return text;
   }
 
+  toBase64(file) {
+    let reader = new FileReader();
+    var result = "";
+
+    reader.onload = (function(f) {
+      return function(e) {
+        result = this.result;
+      };
+    })(file);
+    // var imageUrl = Promise.all(reader.addEventListener(
+    //   "load",
+    //   function() {
+    //     result.image = reader.result;
+    //     // imageURL = reader.result;
+    //     return result;
+    //   },
+    //   false
+    // ));
+    // reader.onload = function() {
+    //   imageURL = reader.result;
+    //   console.log(imageURL);
+    //   return imageURL;
+    // };
+    console.log("result", result);
+    console.log(reader.readAsDataURL(image));
+
+    // console.log("image - ", imageUrl);
+
+    // return imageURL;
+  }
+
   handleChange = (event, { name, value }) => {
     if (this.state.hasOwnProperty(name)) {
       this.setState({ [name]: value });
@@ -49,6 +82,10 @@ export default class VoterNew extends Component {
     });
   };
 
+  getFiles(files) {
+    this.setState({ selectedFile: files });
+  }
+
   onSubmit = async event => {
     event.preventDefault();
 
@@ -58,12 +95,7 @@ export default class VoterNew extends Component {
 
     this.setState({ loading: true, errorMessage: "" });
 
-    let reader = new FileReader();
-    reader.onloadend = function() {
-      console.log(reader.result);
-    };
-    let uploaded_image = reader.readAsDataURL(selectedFile);
-    console.log(uploaded_image);
+    // let uploaded_image = await this.toBase64(selectedFile);
 
     try {
       let fullname = name.split(" ");
@@ -78,20 +110,31 @@ export default class VoterNew extends Component {
 
       console.log("reference: ", reference);
 
+      // let uploaded_image = this.toBase64(selectedFile);
+      let uploaded_image = selectedFile[0].base64;
+
+      console.log(uploaded_image);
+
       const shufti = await fetch("https://shuftipro.com/api/", {
         method: "POST",
         headers: {
           Accept: "application/json",
           Authorization: "Basic " + btoa(client_id + ":" + client_key),
-          "Content-Type": "application/json",
-          Host: "shuftipro.com"
+          "Content-Type": "application/json"
+          // Host: "shuftipro.com"
         },
         body: JSON.stringify({
+          name: "Off-site with OCR",
+          verification_mode: "any",
           reference,
           callback_url: "https://shuftipro.com/backoffice/demo-redirect",
+          country: "NG",
+          email: "johndoe@example.com",
+          language: "EN",
+
           document: {
             proof: uploaded_image,
-            additional_proof: uploaded_image,
+            // additional_proof: uploaded_image,
             supported_types: [
               "passport",
               "id_card",
@@ -105,10 +148,17 @@ export default class VoterNew extends Component {
             },
             dob
           },
-          address: {
-            proof: uploaded_image,
-            full_address: address
+
+          /*
+          face: {
+            proof: uploaded_image
           },
+
+          
+          address: {
+            proof: uploaded_image
+          }
+          */
 
           background_checks: {
             name: {
@@ -117,32 +167,7 @@ export default class VoterNew extends Component {
               middle_name: fullname[2]
             },
             dob
-          },
-          requests: [
-            {
-              country: "NG",
-              reference,
-              auth: {
-                type: "basic",
-                basic: [
-                  {
-                    key: "password",
-                    value: client_key
-                  },
-                  {
-                    key: "username",
-                    value: client_id
-                  }
-                ]
-              },
-              currentHelper: "basicAuth",
-              helperAttributes: {
-                id: "basic",
-                username: client_id,
-                password: client_key
-              }
-            }
-          ]
+          }
         })
       });
 
@@ -243,9 +268,15 @@ export default class VoterNew extends Component {
 
           <Form.Field>
             <label>Upload Means of Identification</label>
-            <Input
+            {/* <Input
               type="file"
               onChange={this.handleselectedFile}
+              accept="image/*"
+              required
+            /> */}
+            <FileBase64
+              multiple={true}
+              onDone={this.getFiles.bind(this)}
               accept="image/*"
               required
             />
