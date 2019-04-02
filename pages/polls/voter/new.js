@@ -18,7 +18,8 @@ export default class VoterNew extends Component {
     name: "",
     dob: "",
     address: "",
-    selectedFile: null,
+    document: null,
+    face: null,
     imageURL: "",
     loaded: 0,
     errorMessage: "",
@@ -75,27 +76,31 @@ export default class VoterNew extends Component {
     }
   };
 
-  handleselectedFile = event => {
+  handledocument = event => {
     this.setState({
-      selectedFile: event.target.files[0],
+      document: event.target.files[0],
       loaded: 0
     });
   };
 
-  getFiles(files) {
-    this.setState({ selectedFile: files });
+  getDocument(files) {
+    this.setState({ document: files });
+  }
+
+  getFace(files) {
+    this.setState({ face: files });
   }
 
   onSubmit = async event => {
     event.preventDefault();
 
-    const { name, dob, address, selectedFile } = this.state;
+    const { name, dob, address, document, face } = this.state;
 
-    console.log(name, dob, address, selectedFile);
+    console.log(name, dob, address, document);
 
     this.setState({ loading: true, errorMessage: "" });
 
-    // let uploaded_image = await this.toBase64(selectedFile);
+    // let uploaded_document = await this.toBase64(document);
 
     try {
       let fullname = name.split(" ");
@@ -110,10 +115,11 @@ export default class VoterNew extends Component {
 
       console.log("reference: ", reference);
 
-      // let uploaded_image = this.toBase64(selectedFile);
-      let uploaded_image = selectedFile[0].base64;
+      // let uploaded_document = this.toBase64(document);
+      let uploaded_document = document[0].base64;
+      let uploaded_face = face[0].base64;
 
-      console.log(uploaded_image);
+      // console.log(uploaded_document);
 
       const shufti = await fetch("https://shuftipro.com/api/", {
         method: "POST",
@@ -124,17 +130,16 @@ export default class VoterNew extends Component {
           // Host: "shuftipro.com"
         },
         body: JSON.stringify({
-          name: "Off-site with OCR",
           verification_mode: "any",
           reference,
           callback_url: "https://shuftipro.com/backoffice/demo-redirect",
-          country: "NG",
+          country: "GB",
           email: "johndoe@example.com",
           language: "EN",
 
           document: {
-            proof: uploaded_image,
-            // additional_proof: uploaded_image,
+            proof: uploaded_document,
+            // additional_proof: uploaded_document,
             supported_types: [
               "passport",
               "id_card",
@@ -149,24 +154,8 @@ export default class VoterNew extends Component {
             dob
           },
 
-          /*
           face: {
-            proof: uploaded_image
-          },
-
-          
-          address: {
-            proof: uploaded_image
-          }
-          */
-
-          background_checks: {
-            name: {
-              first_name: fullname[0],
-              last_name: fullname[1],
-              middle_name: fullname[2]
-            },
-            dob
+            proof: uploaded_face
           }
         })
       });
@@ -175,35 +164,38 @@ export default class VoterNew extends Component {
 
       console.log(content);
 
-      /*
-      const user_account = await web3.eth.accounts.create();
-      console.log(user_account);
-
-      const [account] = await web3.eth.getAccounts();
-      const poll = Poll(this.props.address);
-
-      const request = await poll.methods
-        .registerVoter(
-          web3.utils.fromAscii(name),
-          web3.utils.fromAscii(dob),
-          web3.utils.fromAscii(address),
-          user_account.address
-        )
-        .send({
-          from: account
-        });
-
-      if (request) {
-        this.setState({
-          isHidden: false,
-          privateKey: user_account.privateKey
-        });
+      if (content.event != "verification.approved") {
+        this.setState({ errorMessage: content.declined_reason });
+        console.log(content.declined_reason);
       } else {
-        this.setState({ errorMessage: err.message });
-      }
+        const user_account = await web3.eth.accounts.create();
+        console.log(user_account);
 
-      // Router.pushRoute("/");
-      */
+        const [account] = await web3.eth.getAccounts();
+        const poll = Poll(this.props.address);
+
+        const request = await poll.methods
+          .registerVoter(
+            web3.utils.fromAscii(name),
+            web3.utils.fromAscii(dob),
+            web3.utils.fromAscii(address),
+            user_account.address
+          )
+          .send({
+            from: account
+          });
+
+        if (request) {
+          this.setState({
+            isHidden: false,
+            privateKey: user_account.privateKey
+          });
+        } else {
+          this.setState({ errorMessage: err.message });
+        }
+
+        // Router.pushRoute("/");
+      }
     } catch (err) {
       this.setState({ errorMessage: err.message });
       console.log(err.message);
@@ -267,16 +259,26 @@ export default class VoterNew extends Component {
           </Form.Field>
 
           <Form.Field>
-            <label>Upload Means of Identification</label>
+            <label>Upload Document of Identification</label>
             {/* <Input
               type="file"
-              onChange={this.handleselectedFile}
+              onChange={this.handledocument}
               accept="image/*"
               required
             /> */}
             <FileBase64
               multiple={true}
-              onDone={this.getFiles.bind(this)}
+              onDone={this.getDocument.bind(this)}
+              accept="image/*"
+              required
+            />
+          </Form.Field>
+
+          <Form.Field>
+            <label>Upload Picture of Your Face</label>
+            <FileBase64
+              multiple={true}
+              onDone={this.getFace.bind(this)}
               accept="image/*"
               required
             />
