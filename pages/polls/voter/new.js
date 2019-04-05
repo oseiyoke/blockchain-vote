@@ -105,13 +105,12 @@ export default class VoterNew extends Component {
     try {
       let fullname = name.split(" ");
       console.log(fullname);
-      if (fullname.length < 3) throw "Enter Firstname, Lastname & middlename";
 
       let reference = this.makeid(15);
       let client_id =
-        "wUZ7gJf7Z0Y5PLh42zk0dV5lbb4YSMl955mwIyUPEVKCIlmTzR1554086576";
+        "wed8oMhBaFsDcpxR9LBPa2fV2JBEEp02YhUL4GH6eapl0OcWs51554006155";
       let client_key =
-        "$2y$10$43kLOeiBQ141wOoWxc.vheUZKaxCVBcO.gZPzDN9GeAZk3jQxkl4u";
+        "$2y$10$EWPqKwEnVLaEE8/rNby7SO8dmHU/X95OEGTYVhc8B3UWbUPEhYfma";
 
       console.log("reference: ", reference);
 
@@ -119,7 +118,7 @@ export default class VoterNew extends Component {
       let uploaded_document = document[0].base64;
       let uploaded_face = face[0].base64;
 
-      // console.log(uploaded_document);
+      console.log(uploaded_document);
 
       const shufti = await fetch("https://shuftipro.com/api/", {
         method: "POST",
@@ -133,7 +132,7 @@ export default class VoterNew extends Component {
           verification_mode: "any",
           reference,
           callback_url: "https://shuftipro.com/backoffice/demo-redirect",
-          country: "GB",
+          country: "NG",
           email: "johndoe@example.com",
           language: "EN",
 
@@ -164,38 +163,36 @@ export default class VoterNew extends Component {
 
       console.log(content);
 
-      if (content.event != "verification.approved") {
-        this.setState({ errorMessage: content.declined_reason });
-        console.log(content.declined_reason);
-      } else {
-        const user_account = await web3.eth.accounts.create();
-        console.log(user_account);
-
-        const [account] = await web3.eth.getAccounts();
-        const poll = Poll(this.props.address);
-
-        const request = await poll.methods
-          .registerVoter(
-            web3.utils.fromAscii(name),
-            web3.utils.fromAscii(dob),
-            web3.utils.fromAscii(address),
-            user_account.address
-          )
-          .send({
-            from: account
-          });
-
-        if (request) {
-          this.setState({
-            isHidden: false,
-            privateKey: user_account.privateKey
-          });
-        } else {
-          this.setState({ errorMessage: err.message });
-        }
-
-        // Router.pushRoute("/");
+      if (content.event != "verification.accepted") {
+        throw new Error(content.declined_reason);
       }
+      const user_account = await web3.eth.accounts.create();
+      console.log(user_account);
+
+      const [account] = await web3.eth.getAccounts();
+      const poll = Poll(this.props.address);
+
+      const request = await poll.methods
+        .registerVoter(
+          web3.utils.fromAscii(name),
+          web3.utils.fromAscii(dob),
+          web3.utils.fromAscii(address),
+          user_account.address
+        )
+        .send({
+          from: account
+        });
+
+      if (request) {
+        this.setState({
+          isHidden: false,
+          privateKey: user_account.privateKey
+        });
+      } else {
+        this.setState({ errorMessage: err.message });
+      }
+
+      // Router.pushRoute("/");
     } catch (err) {
       this.setState({ errorMessage: err.message });
       console.log(err.message);
